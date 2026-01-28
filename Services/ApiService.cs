@@ -1,77 +1,74 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using praaaaa13.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Text.Json;
-using praaaaa13.Models;
+using System.Threading.Tasks;
 
 namespace praaaaa13.Services
 {
-    public class ApiService
+    public class APIService
     {
-        private readonly HttpClient _httpClient;
-        private readonly string _apiBaseUrl;
+        private static readonly HttpClient _httpClient = new HttpClient();
+        private static readonly string _apiBaseUrl = "http://192.168.1.120:5123/";
 
-        public ApiService()
+        public static T Get<T>(string endPoint)
         {
-            // Инициализируем HttpClient
-            _httpClient = new HttpClient();
-            // Укажите здесь адрес вашего Web API (используйте ваш IP и порт)
-            _apiBaseUrl = "http://192.168.1.120:5123/api/";
-            // Устанавливаем таймаут
-            _httpClient.Timeout = TimeSpan.FromSeconds(30);
-        }
-
-        // GET: Получить все товары
-        public async Task<List<Product>> GetProductsAsync()
-        {
-            var response = await _httpClient.GetAsync($"{_apiBaseUrl}Products");
-            if (response.IsSuccessStatusCode)
+            try
             {
-                var content = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<List<Product>>(content);
-            }
-            return new List<Product>();
-        }
+                var response = _httpClient.GetAsync(_apiBaseUrl + endPoint).Result;
 
-        // GET: Получить товар по ID
-        public async Task<Product> GetProductByIdAsync(int id)
-        {
-            var response = await _httpClient.GetAsync($"{_apiBaseUrl}Products/{id}");
-            if (response.IsSuccessStatusCode)
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"API Error: {response.StatusCode}");
+                    return default(T);
+                }
+
+                var content = response.Content.ReadAsStringAsync().Result;
+                var data = JsonConvert.DeserializeObject<T>(content);
+                return data;
+            }
+            catch (Exception ex)
             {
-                var content = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<Product>(content);
+                Console.WriteLine($"API Error: {ex.Message}");
+                return default(T);
             }
-            return null;
         }
 
-        // POST: Добавить товар
-        public async Task<bool> AddProductAsync(Product product)
+        public static async Task<string> Post<T>(T body, string endpoint)
         {
-            var json = JsonSerializer.Serialize(product);
+            var json = JsonConvert.SerializeObject(body);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var result = await _httpClient.PostAsync(_apiBaseUrl + endpoint, content);
 
-            var response = await _httpClient.PostAsync($"{_apiBaseUrl}Products", content);
-            return response.IsSuccessStatusCode;
+            if (!result.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException($"Error: {result.StatusCode}");
+            }
+
+            return await result.Content.ReadAsStringAsync();
         }
 
-        // PUT: Обновить товар
-        public async Task<bool> UpdateProductAsync(int id, Product product)
+        public static async Task<string> Put<T>(T body, int id, string endpoint)
         {
-            var json = JsonSerializer.Serialize(product);
+            var json = JsonConvert.SerializeObject(body);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var result = await _httpClient.PutAsync(_apiBaseUrl + endpoint + "/" + id, content);
 
-            var response = await _httpClient.PutAsync($"{_apiBaseUrl}Products/{id}", content);
-            return response.IsSuccessStatusCode;
+            if (!result.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException($"Error: {result.StatusCode}");
+            }
+
+            return await result.Content.ReadAsStringAsync();
         }
 
-        // DELETE: Удалить товар
-        public async Task<bool> DeleteProductAsync(int id)
+        public static async Task<bool> Delete(int id, string endpoint)
         {
-            var response = await _httpClient.DeleteAsync($"{_apiBaseUrl}Products/{id}");
-            return response.IsSuccessStatusCode;
+            var result = await _httpClient.DeleteAsync(_apiBaseUrl + endpoint + "/" + id);
+            return result.IsSuccessStatusCode;
         }
     }
 }

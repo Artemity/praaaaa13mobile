@@ -6,43 +6,83 @@ namespace praaaaa13.Views;
 
 public partial class MainPage : ContentPage
 {
-    private readonly ApiService _apiService;
-    private ObservableCollection<Product> _products;
-
     public MainPage()
     {
         InitializeComponent();
-        _apiService = new ApiService();
-        _products = new ObservableCollection<Product>();
-        lvProducts.ItemsSource = _products;
     }
 
-    protected override async void OnAppearing()
+    protected override void OnAppearing()
     {
         base.OnAppearing();
-        await LoadProductsAsync();
+        LoadProducts();
     }
 
-    private async Task LoadProductsAsync()
+    private void LoadProducts()
     {
-        var products = await _apiService.GetProductsAsync();
-        _products.Clear();
-        foreach (var product in products)
+        try
         {
-            _products.Add(product);
+            var products = APIService.Get<List<Product>>("api/products");
+            if (products != null)
+            {
+                lvProducts.ItemsSource = products;
+            }
+            else
+            {
+                DisplayAlert("Внимание", "Не удалось загрузить продукты", "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            DisplayAlert("Ошибка", $"Не удалось загрузить продукты: {ex.Message}", "OK");
         }
     }
 
-    private async void OnAddClicked(object sender, EventArgs e)
+    private async void btnAdd_Clicked(object sender, EventArgs e)
     {
-        await Navigation.PushAsync(new AddEditPage());
+        Data.Product = null;
+        await Navigation.PushModalAsync(new AddEditProductPage());
     }
 
-    private async void OnItemTapped(object sender, ItemTappedEventArgs e)
+    private async void btnEdit_Clicked(object sender, EventArgs e)
     {
-        if (e.Item is Product selectedProduct)
+        var selectedProduct = (Product)lvProducts.SelectedItem;
+        if (selectedProduct != null)
         {
-            await Navigation.PushAsync(new AddEditPage(selectedProduct));
+            Data.Product = selectedProduct;
+            await Navigation.PushModalAsync(new AddEditProductPage());
+        }
+        else
+        {
+            await DisplayAlert("Внимание", "Выберите продукт для редактирования", "OK");
+        }
+    }
+
+    private async void btnDelete_Clicked(object sender, EventArgs e)
+    {
+        var selectedProduct = (Product)lvProducts.SelectedItem;
+        if (selectedProduct != null)
+        {
+            bool confirm = await DisplayAlert("Подтверждение удаления",
+                $"Вы уверены, что хотите удалить продукт: {selectedProduct.Name}?",
+                "Да", "Нет");
+
+            if (confirm)
+            {
+                bool success = await APIService.Delete(selectedProduct.Id, "api/products");
+                if (success)
+                {
+                    await DisplayAlert("Успешно", "Продукт удален", "OK");
+                    LoadProducts();
+                }
+                else
+                {
+                    await DisplayAlert("Ошибка", "Не удалось удалить продукт", "OK");
+                }
+            }
+        }
+        else
+        {
+            await DisplayAlert("Внимание", "Выберите продукт для удаления", "OK");
         }
     }
 }

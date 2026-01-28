@@ -1,4 +1,6 @@
-﻿namespace praaaaa13
+﻿using praaaaa13.Views;
+
+namespace praaaaa13
 {
     public partial class App : Application
     {
