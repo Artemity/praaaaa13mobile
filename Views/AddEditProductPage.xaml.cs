@@ -1,17 +1,60 @@
 using praaaaa13.Models;
 using praaaaa13.Services;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace praaaaa13.Views;
 
-public partial class AddEditProductPage : ContentPage
+public partial class AddEditProductPage : ContentPage, INotifyPropertyChanged
 {
     private bool isEditMode = false;
     private Product currentProduct;
 
+    // Свойства с уведомлением об изменении
+    private string _productName;
+    private string _category;
+    private string _manufacturer;
+
     public string TitleText => isEditMode ? "Редактировать продукт" : "Добавить новый продукт";
-    public string ProductName { get; set; }
-    public string Category { get; set; }
-    public string Manufacturer { get; set; }
+
+    public string ProductName
+    {
+        get => _productName;
+        set
+        {
+            if (_productName != value)
+            {
+                _productName = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    public string Category
+    {
+        get => _category;
+        set
+        {
+            if (_category != value)
+            {
+                _category = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    public string Manufacturer
+    {
+        get => _manufacturer;
+        set
+        {
+            if (_manufacturer != value)
+            {
+                _manufacturer = value;
+                OnPropertyChanged();
+            }
+        }
+    }
 
     public AddEditProductPage()
     {
@@ -22,6 +65,8 @@ public partial class AddEditProductPage : ContentPage
         {
             isEditMode = true;
             currentProduct = Data.Product;
+
+            // Устанавливаем значения через свойства с уведомлением
             ProductName = currentProduct.Name;
             Category = currentProduct.Category;
             Manufacturer = currentProduct.Manufacturer;
@@ -72,5 +117,13 @@ public partial class AddEditProductPage : ContentPage
     private async void btnCancel_Clicked(object sender, EventArgs e)
     {
         await Navigation.PopModalAsync();
+    }
+
+    // Реализация INotifyPropertyChanged
+    public new event PropertyChangedEventHandler PropertyChanged;
+
+    protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }

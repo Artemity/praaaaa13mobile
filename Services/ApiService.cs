@@ -12,7 +12,7 @@ namespace praaaaa13.Services
     public class APIService
     {
         private static readonly HttpClient _httpClient = new HttpClient();
-        private static readonly string _apiBaseUrl = "http://192.168.1.120:5123/";
+        private static readonly string _apiBaseUrl = "http://192.168.26.10:5123/";
 
         public static T Get<T>(string endPoint)
         {
